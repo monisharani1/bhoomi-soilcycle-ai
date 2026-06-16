@@ -19,10 +19,10 @@ export default function GPSScreen() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      pos => {
+      async pos => {
         const { latitude, longitude } = pos.coords;
         setCoords({ lat: latitude, lon: longitude });
-        const soil = detectSoilFromLocation(latitude, longitude);
+        const soil = await detectSoilFromLocation(latitude, longitude);
         setLocation({ lat: latitude, lon: longitude });
         setSoilData(soil);
         setGpsState('success');
@@ -35,12 +35,12 @@ export default function GPSScreen() {
     );
   };
 
-  const simulateLocation = () => {
+  const simulateLocation = async () => {
     // Simulate Karnataka farmer location
     const demoLat = 12.5211 + (Math.random() - 0.5) * 2;
     const demoLon = 76.8958 + (Math.random() - 0.5) * 2;
     setCoords({ lat: demoLat, lon: demoLon });
-    const soil = detectSoilFromLocation(demoLat, demoLon);
+    const soil = await detectSoilFromLocation(demoLat, demoLon);
     setLocation({ lat: demoLat, lon: demoLon });
     setSoilData(soil);
     setTimeout(() => setGpsState('success'), 1500);

@@ -36,17 +36,63 @@ export const AppProvider = ({ children }) => {
 
   const t = (key) => translations[lang]?.[key] || key;
 
-  const detectSoilFromLocation = useCallback((lat, lon) => {
-    // Simulate GIS lookup - in production this would call a real API
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+
+  const detectSoilFromLocation = useCallback(async (lat, lon) => {
+    try {
+      // ── Call real backend API ──────────────────────────────
+      const res = await fetch(`${BACKEND_URL}/api/detect-soil`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude: lat, longitude: lon }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // Map backend response to frontend soilData shape
+        const soilEntry = karnatakaSoilDB.find(s =>
+          s.soilType?.toLowerCase().includes(data.soil.soil_type?.toLowerCase().split(' ')[0])
+        ) || karnatakaSoilDB[0];
+
+        return {
+          district: data.location.district,
+          state: data.location.state,
+          lat: lat.toFixed(4),
+          lon: lon.toFixed(4),
+          soilType: data.soil.soil_type,
+          soilTypeKn: data.soil.soil_type_kn || soilEntry?.soilTypeKn || '',
+          soilColor: soilEntry?.color || '#c0392b',
+          npk: {
+            n: data.npk.values?.n ?? soilEntry?.npk?.n ?? 55,
+            p: data.npk.values?.p ?? soilEntry?.npk?.p ?? 40,
+            k: data.npk.values?.k ?? soilEntry?.npk?.k ?? 70,
+          },
+          npkLabels: {
+            n: data.npk.nitrogen,
+            p: data.npk.phosphorus,
+            k: data.npk.potassium,
+          },
+          confidence: data.soil.confidence,
+          description: data.soil.description,
+          commonCrops: soilEntry?.commonCrops || [],
+          source: 'api',
+        };
+      }
+    } catch (err) {
+      console.warn('⚠️ Backend unreachable, using local fallback:', err.message);
+    }
+
+    // ── Fallback: static local lookup ─────────────────────────
     const districts = {
-      'Mandya': { lat: [12.3, 12.8], lon: [76.5, 77.2] },
-      'Mysuru': { lat: [11.9, 12.6], lon: [76.3, 77.0] },
-      'Belagavi': { lat: [15.5, 16.5], lon: [74.0, 75.5] },
-      'Dharwad': { lat: [15.0, 15.8], lon: [74.8, 75.8] },
-      'Raichur': { lat: [15.8, 16.8], lon: [76.5, 77.8] },
-      'Bengaluru Rural': { lat: [12.8, 13.5], lon: [77.0, 77.8] },
+      'Mandya':         { lat: [12.3, 12.8], lon: [76.5, 77.2] },
+      'Mysuru':         { lat: [11.9, 12.6], lon: [76.3, 77.0] },
+      'Belagavi':       { lat: [15.5, 16.5], lon: [74.0, 75.5] },
+      'Dharwad':        { lat: [15.0, 15.8], lon: [74.8, 75.8] },
+      'Raichur':        { lat: [15.8, 16.8], lon: [76.5, 77.8] },
+      'Bengaluru Rural':{ lat: [12.8, 13.5], lon: [77.0, 77.8] },
       'Uttara Kannada': { lat: [14.2, 15.2], lon: [74.0, 75.2] },
-      'Tumakuru': { lat: [13.0, 14.0], lon: [76.5, 77.5] },
+      'Tumakuru':       { lat: [13.0, 14.0], lon: [76.5, 77.5] },
     };
 
     let matchedDistrict = 'Mandya';
@@ -61,7 +107,7 @@ export const AppProvider = ({ children }) => {
       s.districts.some(d => d.toLowerCase().includes(matchedDistrict.toLowerCase()))
     ) || karnatakaSoilDB[0];
 
-    const confidence = Math.floor(Math.random() * 15) + 80; // 80-95%
+    const confidence = Math.floor(Math.random() * 15) + 80;
 
     return {
       district: matchedDistrict,
@@ -75,8 +121,10 @@ export const AppProvider = ({ children }) => {
       confidence,
       commonCrops: soilEntry.commonCrops,
       description: soilEntry.description,
+      source: 'fallback',
     };
   }, []);
+
 
   const runAnalysis = useCallback(() => {
     if (!soilData || !farmInputs.currentCrop) return;

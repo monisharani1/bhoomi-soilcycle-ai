@@ -95,7 +95,7 @@ export default function DashboardTab() {
       icon: <Droplets size={20}/>,
       label: lang === 'kn' ? 'ಪ್ರಸ್ತುತ ಬೆಳೆ' : 'Current Crop',
       value: farmInputs.currentCrop || (lang === 'kn' ? 'ನಮೂದಿಸಿಲ್ಲ' : 'Not set'),
-      sub: farmInputs.season ? (farmInputs.season === 'kharif' ? 'Kharif' : farmInputs.season === 'rabi' ? 'Rabi' : 'Summer') : '',
+      sub: farmInputs.currentCrop && farmInputs.season ? (farmInputs.season === 'kharif' ? 'Kharif' : farmInputs.season === 'rabi' ? 'Rabi' : 'Summer') : '',
       color: '#6b4c2a', bgColor: 'rgba(107,76,42,0.1)',
       icon2: null,
     },
