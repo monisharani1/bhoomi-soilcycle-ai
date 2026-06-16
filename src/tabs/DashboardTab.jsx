@@ -1,6 +1,200 @@
+import { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { cropDatabase } from '../data/bhoomiData';
 import { RadialBarChart, RadialBar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area } from 'recharts';
-import { Leaf, TrendingUp, AlertTriangle, CheckCircle, MapPin, Droplets, Activity } from 'lucide-react';
+import { Leaf, TrendingUp, AlertTriangle, CheckCircle, MapPin, Droplets, Activity, Pencil, X, ChevronRight } from 'lucide-react';
+
+// ── Crop Picker Modal ─────────────────────────────────────────────────────────
+const SEASONS = ['All Year', 'Kharif', 'Rabi', 'Summer', 'Kharif/Rabi', 'Rabi/Summer', 'Annual'];
+
+function CropPickerModal({ open, onClose, onSelect, lang, currentCrop }) {
+  const [search, setSearch] = useState('');
+  const [activeSeason, setActiveSeason] = useState('All');
+
+  if (!open) return null;
+
+  const crops = Object.entries(cropDatabase);
+
+  const seasons = ['All', 'Kharif', 'Rabi', 'Summer', 'Annual'];
+
+  const filtered = crops.filter(([name, data]) => {
+    const matchSearch = name.toLowerCase().includes(search.toLowerCase()) ||
+      data.nameKn?.includes(search);
+    const matchSeason = activeSeason === 'All' || data.season?.includes(activeSeason);
+    return matchSearch && matchSeason;
+  });
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.45)',
+          backdropFilter: 'blur(3px)',
+          zIndex: 1000,
+          animation: 'fadeIn 0.2s ease',
+        }}
+      />
+
+      {/* Sheet */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: 480,
+        background: 'white',
+        borderRadius: '24px 24px 0 0',
+        zIndex: 1001,
+        maxHeight: '88vh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 -8px 40px rgba(0,0,0,0.2)',
+        animation: 'slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+      }}>
+        {/* Handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: '#dde8cc' }}/>
+        </div>
+
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px 12px',
+          borderBottom: '1px solid #f0f6e8',
+        }}>
+          <div>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#2d3a1e',
+              fontFamily: "'Noto Sans Kannada', 'Poppins', sans-serif" }}>
+              🌾 {lang === 'kn' ? 'ಬೆಳೆ ಆಯ್ಕೆ ಮಾಡಿ' : 'Select Current Crop'}
+            </h3>
+            <p style={{ fontSize: 12, color: '#97a97c', marginTop: 2 }}>
+              {lang === 'kn' ? 'ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಬೆಳೆ ಆಯ್ಕೆ ಮಾಡಿ' : 'Choose what you are currently growing'}
+            </p>
+          </div>
+          <button onClick={onClose} style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: '#f0f6e8', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <X size={18} color="#718355"/>
+          </button>
+        </div>
+
+        {/* Search */}
+        <div style={{ padding: '12px 20px 0' }}>
+          <input
+            type="text"
+            placeholder={lang === 'kn' ? '🔍 ಬೆಳೆ ಹುಡುಕಿ...' : '🔍 Search crop...'}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              width: '100%', padding: '10px 14px', borderRadius: 12,
+              border: '1.5px solid #cfe1b9', fontSize: 14, outline: 'none',
+              background: '#fafff6', fontFamily: "'Inter', sans-serif",
+              boxSizing: 'border-box',
+            }}
+            autoFocus
+          />
+        </div>
+
+        {/* Season filter tabs */}
+        <div style={{
+          display: 'flex', gap: 8, padding: '12px 20px',
+          overflowX: 'auto', scrollbarWidth: 'none',
+        }}>
+          {seasons.map(s => (
+            <button key={s}
+              onClick={() => setActiveSeason(s)}
+              style={{
+                padding: '6px 14px', borderRadius: 20, border: 'none',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                background: activeSeason === s ? '#4a5c33' : '#f0f6e8',
+                color: activeSeason === s ? 'white' : '#718355',
+                transition: 'all 0.2s',
+              }}>
+              {s}
+            </button>
+          ))}
+        </div>
+
+        {/* Crop list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 24px' }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#97a97c' }}>
+              <p style={{ fontSize: 32, marginBottom: 8 }}>🌿</p>
+              <p style={{ fontSize: 14 }}>No crops found</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {filtered.map(([name, data]) => {
+                const isSelected = currentCrop === name;
+                return (
+                  <button
+                    key={name}
+                    onClick={() => { onSelect(name, data.season); onClose(); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '14px 16px', borderRadius: 16, border: 'none',
+                      cursor: 'pointer', textAlign: 'left', width: '100%',
+                      background: isSelected
+                        ? 'linear-gradient(135deg, rgba(74,92,51,0.12), rgba(113,131,85,0.08))'
+                        : 'rgba(240,246,232,0.6)',
+                      border: isSelected ? '1.5px solid #718355' : '1.5px solid transparent',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {/* Emoji */}
+                    <div style={{
+                      width: 48, height: 48, borderRadius: 14,
+                      background: isSelected ? 'rgba(74,92,51,0.15)' : 'rgba(113,131,85,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 24, flexShrink: 0,
+                    }}>
+                      {data.icon}
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: '#2d3a1e' }}>{name}</p>
+                        <span style={{
+                          background: '#e9f5db', color: '#4a5c33',
+                          fontSize: 10, fontWeight: 600,
+                          padding: '2px 8px', borderRadius: 10,
+                        }}>
+                          {data.season}
+                        </span>
+                        {isSelected && (
+                          <span style={{
+                            background: '#4a5c33', color: 'white',
+                            fontSize: 10, fontWeight: 700,
+                            padding: '2px 8px', borderRadius: 10,
+                          }}>✓ Set</span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: 12, color: '#97a97c',
+                        fontFamily: "'Noto Sans Kannada', sans-serif" }}>
+                        {data.nameKn} · {data.duration} · 💧 {data.waterReq}
+                      </p>
+                    </div>
+
+                    <ChevronRight size={16} color="#cfe1b9"/>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateX(-50%) translateY(100%); }
+          to   { transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
+    </>
+  );
+}
 
 const CircleGauge = ({ value, size = 140, label }) => {
   const r = 52, cx = 70, cy = 70;
@@ -56,7 +250,19 @@ const NPKBar = ({ label, value, max = 100, color, symbol }) => (
 );
 
 export default function DashboardTab() {
-  const { soilData, recommendations, farmInputs, lang, t } = useApp();
+  const { soilData, recommendations, farmInputs, setFarmInputs, lang, t } = useApp();
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+
+  const handleCropSelect = (cropName, season) => {
+    setFarmInputs(prev => ({
+      ...prev,
+      currentCrop: cropName,
+      season: season?.toLowerCase().includes('kharif') ? 'kharif'
+             : season?.toLowerCase().includes('rabi') ? 'rabi'
+             : season?.toLowerCase().includes('summer') ? 'summer'
+             : prev.season,
+    }));
+  };
 
   const npk = recommendations?.adjustedNPK || soilData?.npk || { n: 55, p: 48, k: 72 };
   const healthScore = recommendations?.soilHealthScore || 67;
@@ -94,15 +300,25 @@ export default function DashboardTab() {
     {
       icon: <Droplets size={20}/>,
       label: lang === 'kn' ? 'ಪ್ರಸ್ತುತ ಬೆಳೆ' : 'Current Crop',
-      value: farmInputs.currentCrop || (lang === 'kn' ? 'ನಮೂದಿಸಿಲ್ಲ' : 'Not set'),
-      sub: farmInputs.currentCrop && farmInputs.season ? (farmInputs.season === 'kharif' ? 'Kharif' : farmInputs.season === 'rabi' ? 'Rabi' : 'Summer') : '',
+      value: farmInputs.currentCrop
+        ? `${cropDatabase[farmInputs.currentCrop]?.icon || '🌿'} ${farmInputs.currentCrop}`
+        : (lang === 'kn' ? 'ನಮೂದಿಸಿಲ್ಲ' : 'Tap to set'),
+      sub: farmInputs.currentCrop && farmInputs.season ? (farmInputs.season === 'kharif' ? 'Kharif' : farmInputs.season === 'rabi' ? 'Rabi' : 'Summer') : (lang === 'kn' ? 'ಟ್ಯಾಪ್ ಮಾಡಿ' : ''),
       color: '#6b4c2a', bgColor: 'rgba(107,76,42,0.1)',
-      icon2: null,
+      icon2: <Pencil size={13} color="#97a97c"/>,
+      onClick: () => setCropModalOpen(true),
     },
   ];
 
   return (
     <div style={{ padding: '0 0 32px' }}>
+      <CropPickerModal
+        open={cropModalOpen}
+        onClose={() => setCropModalOpen(false)}
+        onSelect={handleCropSelect}
+        lang={lang}
+        currentCrop={farmInputs.currentCrop}
+      />
       {/* Greeting banner */}
       <div style={{
         background: 'linear-gradient(135deg, #4a5c33, #718355)',
@@ -142,7 +358,18 @@ export default function DashboardTab() {
         display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 24,
       }}>
         {statsCards.map((card, i) => (
-          <div key={i} className="metric-card" style={{ padding: '18px' }}>
+          <div
+            key={i}
+            className="metric-card"
+            style={{
+              padding: '18px',
+              cursor: card.onClick ? 'pointer' : 'default',
+              transition: 'transform 0.15s, box-shadow 0.15s',
+            }}
+            onClick={card.onClick}
+            onMouseEnter={e => { if (card.onClick) e.currentTarget.style.transform = 'scale(1.02)'; }}
+            onMouseLeave={e => { if (card.onClick) e.currentTarget.style.transform = 'scale(1)'; }}
+          >
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10,
             }}>
@@ -160,7 +387,7 @@ export default function DashboardTab() {
               {card.label}
             </p>
             <p style={{
-              fontSize: 15, fontWeight: 800, color: '#2d3a1e',
+              fontSize: 15, fontWeight: 800, color: card.onClick && !farmInputs.currentCrop ? '#97a97c' : '#2d3a1e',
               fontFamily: "'Noto Sans Kannada', 'Inter', sans-serif",
               marginBottom: 2,
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
