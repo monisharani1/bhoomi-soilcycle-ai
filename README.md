@@ -1,16 +1,21 @@
-# React + Vite
+# 🌱 Bhoomi - AI Soil & Crop Cycle Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bhoomi is a full-stack, AI-powered agriculture platform designed to assist farmers and agricultural planners. It features real-time soil detection, crop cycle management, and an AI chatbot for agricultural advice. 
 
-Currently, two official plugins are available:
+## 🚀 Live Demo
+👉 **[Click here to view the live dashboard](https://bhoomi-soilcycle-ai.vercel.app/)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Tech Stack & Architecture
+This project uses a decoupled architecture with a React frontend and an Express backend:
+* **Frontend:** React (Vite), TailwindCSS, Leaflet Maps.
+* **Backend:** Node.js, Express, deployed on Render.
+* **AI Integrations:** Custom API endpoints for soil analysis and chatbot features.
+* **Features:** OTP Authentication, Building detection via Overpass API, Interactive Map integration.
 
-## React Compiler
+## ⚙️ How to Run Locally
+1. Clone the repository.
+2. **Backend:** Navigate to `server`, run `npm install`, and start with `node index.js`.
+3. **Frontend:** Navigate to the root folder, run `npm install`, and start with `npm run dev`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+*Developed by Monisha Rani S*
